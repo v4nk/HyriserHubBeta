@@ -1,8 +1,8 @@
--- [[ HYRISER HUB BETA - V15 CROSS-PLATFORM + KEY SPAM ]] --
+-- [[ HYRISER HUB BETA - V15 ULTIMATE PC & MOBILE ]] --
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
-local VirtualInputManager = game:GetService("VirtualInputManager") -- Dùng để spam phím E trên PC
+local VIM = game:GetService("VirtualInputManager")
 local LP = Players.LocalPlayer
 
 -- [[ CONFIG ]] --
@@ -22,10 +22,9 @@ end)
 
 -- [[ 2. UI INITIALIZATION ]] --
 local ScreenGui = Instance.new("ScreenGui", CoreGui)
-ScreenGui.Name = "Hyriser_V15_Final_V2"
+ScreenGui.Name = "Hyriser_V15_Ultimate"
 ScreenGui.ResetOnSpawn = false
 
--- MAIN FRAME (Màu đen nhạt/Trắng xám)
 local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.Size = UDim2.new(0, 220, 0, 150)
 MainFrame.Position = UDim2.new(0.5, -110, 0.5, -75)
@@ -45,7 +44,7 @@ Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 16
 
--- LOGO IMAGE (ID: 134859472779962)
+-- LOGO IMAGE
 local ToggleIcon = Instance.new("ImageButton", ScreenGui)
 ToggleIcon.Size = UDim2.new(0, 60, 0, 60)
 ToggleIcon.Position = UDim2.new(0.05, 0, 0.2, 0)
@@ -88,7 +87,7 @@ end
 CreateToggle("AUTO SPAM HARVEST", "AutoHarvest", UDim2.new(0, 15, 0, 45))
 CreateToggle("AUTO SELL (FULL)", "AutoSell", UDim2.new(0, 15, 0, 95))
 
--- [[ 3. LOGIC SMART HARVEST & KEY SPAM ]] --
+-- [[ 3. IMPROVED LOGIC FOR PC SPAM ]] --
 
 local function IsInventoryFullUI()
     for _, v in pairs(LP.PlayerGui:GetDescendants()) do
@@ -121,54 +120,47 @@ local function ForceSellAction()
     end
 end
 
+-- Vòng lặp thu hoạch tối ưu cho PC
 task.spawn(function()
-    while task.wait(0.1) do -- Giảm xuống 0.1 để spam nhanh hơn
+    while true do
+        task.wait() -- Chạy nhanh nhất có thể theo tốc độ khung hình
         if _G.Config.AutoHarvest then
-            local root = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+            local character = LP.Character
+            local root = character and character:FindFirstChild("HumanoidRootPart")
             if not root then continue end
 
             if _G.Config.AutoSell and IsInventoryFullUI() then
-                -- LOGIC BÁN HÀNG GIỮ NGUYÊN
+                -- Logic Auto Sell
                 local steve = workspace:FindFirstChild("Steve", true)
                 if steve then
                     if not _G.Config.LastGardenPos then _G.Config.LastGardenPos = root.CFrame end
                     root.CFrame = steve:GetModelCFrame() * CFrame.new(0, 0, 3)
-                    task.wait(1.2)
+                    task.wait(1)
                     local p = steve:FindFirstChildWhichIsA("ProximityPrompt", true)
                     if p then
                         fireproximityprompt(p)
-                        task.wait(1.5)
+                        task.wait(1)
                         ForceSellAction()
-                        local waitTime = 0
-                        while GetItemCount() > 0 and waitTime < 20 do
-                            task.wait(0.5)
-                            waitTime = waitTime + 1
-                            if waitTime % 4 == 0 then ForceSellAction() end
-                        end
-                        task.wait(2) 
+                        task.wait(1)
                         if _G.Config.LastGardenPos then root.CFrame = _G.Config.LastGardenPos end
+                        _G.Config.LastGardenPos = nil
                     end
                 end
             else
-                -- LOGIC THU HOẠCH + SPAM PHÍM E
-                _G.Config.LastGardenPos = root.CFrame
-                local foundPrompt = false
-                
+                -- Logic Thu hoạch cường độ cao cho PC
                 for _, v in pairs(workspace:GetDescendants()) do
-                    if v:IsA("ProximityPrompt") and v.ActionText == "Harvest" then
-                        if (v.Parent.Position - root.Position).Magnitude <= _G.Config.ScanRange then
+                    if v:IsA("ProximityPrompt") and (v.ActionText == "Harvest" or v.ObjectText:lower():find("plant")) then
+                        if (v.Parent:IsA("BasePart") and (v.Parent.Position - root.Position).Magnitude <= _G.Config.ScanRange) then
+                            -- 1. Thử gọi lệnh trực tiếp (Dành cho Mobile/Một số Executor)
                             v.HoldDuration = 0
-                            fireproximityprompt(v) -- Lệnh gọi trực tiếp (Mobile/PC)
-                            foundPrompt = true
+                            fireproximityprompt(v)
+                            
+                            -- 2. Giả lập nhấn E thật (Dành cho PC)
+                            VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                            task.wait(0.01) -- Độ trễ cực nhỏ để game nhận diện
+                            VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
                         end
                     end
-                end
-                
-                -- Nếu đang đứng gần cây, spam thêm phím E thực tế để chống lỗi trên PC
-                if foundPrompt then
-                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
-                    task.wait(0.05)
-                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
                 end
             end
         end

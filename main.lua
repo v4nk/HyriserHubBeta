@@ -1,4 +1,4 @@
--- [[ HYRISER HUB BETA - V15 FINAL STABLE ]] --
+-- [[ HYRISER HUB BETA - V15 CLEAN WHITE & GREY EDITION ]] --
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
@@ -21,30 +21,36 @@ end)
 
 -- [[ 2. UI INITIALIZATION ]] --
 local ScreenGui = Instance.new("ScreenGui", CoreGui)
-ScreenGui.Name = "Hyriser_V15_Final_Stable"
+ScreenGui.Name = "Hyriser_V15_CleanWhite"
 
--- MAIN FRAME (Tăng chiều cao lên 270 để chứa thêm nút Gear)
+-- MAIN FRAME (Màu đen nhạt/Xám tối)
 local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.Size, MainFrame.Position = UDim2.new(0, 220, 0, 270), UDim2.new(0.12, 0, 0.15, 0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+MainFrame.Size, MainFrame.Position = UDim2.new(0, 220, 0, 150), UDim2.new(0.12, 0, 0.15, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25) -- Đen nhạt (Xám tối)
 MainFrame.Active, MainFrame.Draggable = true, true
 MainFrame.Visible = true
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 6)
-Instance.new("UIStroke", MainFrame).Color = Color3.fromRGB(255, 200, 0)
+
+-- Viền màu trắng xám nhạt
+local FrameStroke = Instance.new("UIStroke", MainFrame)
+FrameStroke.Color = Color3.fromRGB(200, 200, 200) 
+FrameStroke.Thickness = 1.5
 
 local Title = Instance.new("TextLabel", MainFrame)
 Title.Size, Title.Text = UDim2.new(1, 0, 0, 35), "HYRISER HUB BETA"
-Title.TextColor3, Title.BackgroundTransparency = Color3.fromRGB(255, 200, 0), 1
+Title.TextColor3, Title.BackgroundTransparency = Color3.fromRGB(255, 255, 255), 1
 Title.Font, Title.TextSize = Enum.Font.SourceSansBold, 17
 
--- LOGO HH
-local ToggleIcon = Instance.new("TextButton", ScreenGui)
-ToggleIcon.Size, ToggleIcon.Position, ToggleIcon.Text = UDim2.new(0, 45, 0, 45), UDim2.new(0.05, 0, 0.15, 0), "HH"
-ToggleIcon.BackgroundColor3, ToggleIcon.TextColor3 = Color3.fromRGB(15, 15, 15), Color3.fromRGB(255, 200, 0)
-ToggleIcon.Font, ToggleIcon.TextSize = Enum.Font.LuckiestGuy, 22
-Instance.new("UICorner", ToggleIcon).CornerRadius = UDim.new(1, 0)
+-- LOGO IMAGE (Ảnh nhân vật bạn gửi)
+local ToggleIcon = Instance.new("ImageButton", ScreenGui)
+ToggleIcon.Size, ToggleIcon.Position = UDim2.new(0, 55, 0, 55), UDim2.new(0.05, 0, 0.15, 0)
+ToggleIcon.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+ToggleIcon.Image = "rbxassetid://134859472779962" 
+ToggleIcon.ScaleType = Enum.ScaleType.Crop
+Instance.new("UICorner", ToggleIcon).CornerRadius = UDim.new(0, 8) 
+
 local StrokeIcon = Instance.new("UIStroke", ToggleIcon)
-StrokeIcon.Color, StrokeIcon.Thickness = Color3.fromRGB(255, 200, 0), 2
+StrokeIcon.Color, StrokeIcon.Thickness = Color3.fromRGB(255, 255, 255), 1.5
 
 ToggleIcon.MouseButton1Click:Connect(function()
     MainFrame.Visible = not MainFrame.Visible
@@ -53,54 +59,29 @@ end)
 local function CreateToggle(label, key, pos)
     local b = Instance.new("TextButton", MainFrame)
     b.Size, b.Position = UDim2.new(0, 190, 0, 40), pos
-    b.Font, b.TextSize, b.TextColor3 = Enum.Font.SourceSansBold, 14, Color3.new(0, 0, 0)
+    b.Font, b.TextSize = Enum.Font.SourceSansBold, 14
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
+    
     local function up()
-        b.BackgroundColor3 = _G.Config[key] and Color3.fromRGB(255, 200, 0) or Color3.fromRGB(150, 120, 0)
+        -- Khi ON: Màu trắng, chữ đen | Khi OFF: Màu xám đậm, chữ trắng
+        if _G.Config[key] then
+            b.BackgroundColor3 = Color3.fromRGB(240, 240, 240) -- Trắng sáng
+            b.TextColor3 = Color3.fromRGB(0, 0, 0) -- Chữ đen
+        else
+            b.BackgroundColor3 = Color3.fromRGB(45, 45, 45) -- Xám đậm
+            b.TextColor3 = Color3.fromRGB(200, 200, 200) -- Chữ trắng xám
+        end
         b.Text = label .. ": " .. (_G.Config[key] and "ON" or "OFF")
     end
     b.MouseButton1Click:Connect(function() _G.Config[key] = not _G.Config[key] up() end)
     up()
 end
 
--- 2 CHỨC NĂNG CHÍNH (GIỮ NGUYÊN)
 CreateToggle("AUTO SPAM HARVEST", "AutoHarvest", UDim2.new(0, 15, 0, 45))
 CreateToggle("AUTO SELL (FULL)", "AutoSell", UDim2.new(0, 15, 0, 95))
 
--- HÀM MỞ SHOP FLASH TELE
-local function CreateShopBtn(npcName, btnText, pos)
-    local btn = Instance.new("TextButton", MainFrame)
-    btn.Size, btn.Position = UDim2.new(0, 190, 0, 40), pos
-    btn.BackgroundColor3, btn.TextColor3 = Color3.fromRGB(255, 200, 0), Color3.new(0,0,0)
-    btn.Text, btn.Font, btn.TextSize = btnText, Enum.Font.SourceSansBold, 14
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-
-    btn.MouseButton1Click:Connect(function()
-        local root = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-        -- Tìm NPC bằng cách quét ProximityPrompt có tên tương ứng
-        local target = nil
-        for _, v in pairs(workspace:GetDescendants()) do
-            if v:IsA("ProximityPrompt") and (v.Parent.Name:lower():find(npcName:lower()) or v.ObjectText:lower():find(npcName:lower())) then
-                target = v
-                break
-            end
-        end
-
-        if root and target then
-            local oldPos = root.CFrame
-            root.CFrame = target.Parent:GetModelCFrame()
-            task.wait(0.4)
-            fireproximityprompt(target)
-            task.wait(0.4)
-            root.CFrame = oldPos
-        end
-    end)
-end
-
-CreateShopBtn("Bill", "OPEN SEED SHOP (FLASH)", UDim2.new(0, 15, 0, 155))
-CreateShopBtn("Gear", "OPEN GEAR SHOP (FLASH)", UDim2.new(0, 15, 0, 205))
-
--- [[ 3. LOGIC SMART SELL (Y HỆT V15 BẠN GỬI) ]] --
+-- [[ 3. LOGIC SMART SELL ]] --
+-- (Logic thu hoạch và bán giữ nguyên như cũ)
 
 local function IsInventoryFullUI()
     for _, v in pairs(LP.PlayerGui:GetDescendants()) do
@@ -143,30 +124,25 @@ task.spawn(function()
                 local steve = workspace:FindFirstChild("Steve", true)
                 if steve then
                     if not _G.Config.LastGardenPos then _G.Config.LastGardenPos = root.CFrame end
-                    
                     root.CFrame = steve:GetModelCFrame() * CFrame.new(0, 0, 3)
                     task.wait(1.2)
-                    
                     local p = steve:FindFirstChildWhichIsA("ProximityPrompt", true)
                     if p then
                         fireproximityprompt(p)
                         task.wait(1.5)
                         ForceSellAction()
-                        
                         local waitTime = 0
                         while GetItemCount() > 0 and waitTime < 20 do
                             task.wait(0.5)
                             waitTime = waitTime + 1
                             if waitTime % 4 == 0 then ForceSellAction() end
                         end
-                        
                         task.wait(2) 
                         if _G.Config.LastGardenPos then root.CFrame = _G.Config.LastGardenPos end
                     end
                 end
             else
                 _G.Config.LastGardenPos = root.CFrame
-                
                 for _, v in pairs(workspace:GetDescendants()) do
                     if v:IsA("ProximityPrompt") and v.ActionText == "Harvest" then
                         v.Style = Enum.ProximityPromptStyle.Custom

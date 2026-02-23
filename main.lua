@@ -1,7 +1,8 @@
--- [[ HYRISER HUB BETA - V15 CLEAN WHITE & GREY EDITION ]] --
+-- [[ HYRISER HUB BETA - V15 CROSS-PLATFORM + KEY SPAM ]] --
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
+local VirtualInputManager = game:GetService("VirtualInputManager") -- Dùng để spam phím E trên PC
 local LP = Players.LocalPlayer
 
 -- [[ CONFIG ]] --
@@ -21,36 +22,42 @@ end)
 
 -- [[ 2. UI INITIALIZATION ]] --
 local ScreenGui = Instance.new("ScreenGui", CoreGui)
-ScreenGui.Name = "Hyriser_V15_CleanWhite"
+ScreenGui.Name = "Hyriser_V15_Final_V2"
+ScreenGui.ResetOnSpawn = false
 
--- MAIN FRAME (Màu đen nhạt/Xám tối)
+-- MAIN FRAME (Màu đen nhạt/Trắng xám)
 local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.Size, MainFrame.Position = UDim2.new(0, 220, 0, 150), UDim2.new(0.12, 0, 0.15, 0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25) -- Đen nhạt (Xám tối)
+MainFrame.Size = UDim2.new(0, 220, 0, 150)
+MainFrame.Position = UDim2.new(0.5, -110, 0.5, -75)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 MainFrame.Active, MainFrame.Draggable = true, true
-MainFrame.Visible = true
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
 
--- Viền màu trắng xám nhạt
 local FrameStroke = Instance.new("UIStroke", MainFrame)
-FrameStroke.Color = Color3.fromRGB(200, 200, 200) 
+FrameStroke.Color = Color3.fromRGB(200, 200, 200)
 FrameStroke.Thickness = 1.5
 
 local Title = Instance.new("TextLabel", MainFrame)
-Title.Size, Title.Text = UDim2.new(1, 0, 0, 35), "HYRISER HUB BETA"
-Title.TextColor3, Title.BackgroundTransparency = Color3.fromRGB(255, 255, 255), 1
-Title.Font, Title.TextSize = Enum.Font.SourceSansBold, 17
+Title.Size = UDim2.new(1, 0, 0, 35)
+Title.Text = "HYRISER HUB BETA"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.BackgroundTransparency = 1
+Title.Font = Enum.Font.SourceSansBold
+Title.TextSize = 16
 
--- LOGO IMAGE (Ảnh nhân vật bạn gửi)
+-- LOGO IMAGE (ID: 134859472779962)
 local ToggleIcon = Instance.new("ImageButton", ScreenGui)
-ToggleIcon.Size, ToggleIcon.Position = UDim2.new(0, 55, 0, 55), UDim2.new(0.05, 0, 0.15, 0)
-ToggleIcon.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-ToggleIcon.Image = "rbxassetid://134859472779962" 
+ToggleIcon.Size = UDim2.new(0, 60, 0, 60)
+ToggleIcon.Position = UDim2.new(0.05, 0, 0.2, 0)
+ToggleIcon.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+ToggleIcon.Image = "rbxassetid://134859472779962"
 ToggleIcon.ScaleType = Enum.ScaleType.Crop
-Instance.new("UICorner", ToggleIcon).CornerRadius = UDim.new(0, 8) 
+ToggleIcon.Draggable = true
+Instance.new("UICorner", ToggleIcon).CornerRadius = UDim.new(0, 10)
 
 local StrokeIcon = Instance.new("UIStroke", ToggleIcon)
-StrokeIcon.Color, StrokeIcon.Thickness = Color3.fromRGB(255, 255, 255), 1.5
+StrokeIcon.Color = Color3.fromRGB(255, 255, 255)
+StrokeIcon.Thickness = 2
 
 ToggleIcon.MouseButton1Click:Connect(function()
     MainFrame.Visible = not MainFrame.Visible
@@ -58,18 +65,19 @@ end)
 
 local function CreateToggle(label, key, pos)
     local b = Instance.new("TextButton", MainFrame)
-    b.Size, b.Position = UDim2.new(0, 190, 0, 40), pos
-    b.Font, b.TextSize = Enum.Font.SourceSansBold, 14
+    b.Size = UDim2.new(0, 190, 0, 40)
+    b.Position = pos
+    b.Font = Enum.Font.SourceSansBold
+    b.TextSize = 14
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
     
     local function up()
-        -- Khi ON: Màu trắng, chữ đen | Khi OFF: Màu xám đậm, chữ trắng
         if _G.Config[key] then
-            b.BackgroundColor3 = Color3.fromRGB(240, 240, 240) -- Trắng sáng
-            b.TextColor3 = Color3.fromRGB(0, 0, 0) -- Chữ đen
+            b.BackgroundColor3 = Color3.fromRGB(245, 245, 245)
+            b.TextColor3 = Color3.fromRGB(0, 0, 0)
         else
-            b.BackgroundColor3 = Color3.fromRGB(45, 45, 45) -- Xám đậm
-            b.TextColor3 = Color3.fromRGB(200, 200, 200) -- Chữ trắng xám
+            b.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            b.TextColor3 = Color3.fromRGB(200, 200, 200)
         end
         b.Text = label .. ": " .. (_G.Config[key] and "ON" or "OFF")
     end
@@ -80,8 +88,7 @@ end
 CreateToggle("AUTO SPAM HARVEST", "AutoHarvest", UDim2.new(0, 15, 0, 45))
 CreateToggle("AUTO SELL (FULL)", "AutoSell", UDim2.new(0, 15, 0, 95))
 
--- [[ 3. LOGIC SMART SELL ]] --
--- (Logic thu hoạch và bán giữ nguyên như cũ)
+-- [[ 3. LOGIC SMART HARVEST & KEY SPAM ]] --
 
 local function IsInventoryFullUI()
     for _, v in pairs(LP.PlayerGui:GetDescendants()) do
@@ -115,12 +122,13 @@ local function ForceSellAction()
 end
 
 task.spawn(function()
-    while task.wait(0.5) do
+    while task.wait(0.1) do -- Giảm xuống 0.1 để spam nhanh hơn
         if _G.Config.AutoHarvest then
             local root = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
             if not root then continue end
 
             if _G.Config.AutoSell and IsInventoryFullUI() then
+                -- LOGIC BÁN HÀNG GIỮ NGUYÊN
                 local steve = workspace:FindFirstChild("Steve", true)
                 if steve then
                     if not _G.Config.LastGardenPos then _G.Config.LastGardenPos = root.CFrame end
@@ -142,15 +150,25 @@ task.spawn(function()
                     end
                 end
             else
+                -- LOGIC THU HOẠCH + SPAM PHÍM E
                 _G.Config.LastGardenPos = root.CFrame
+                local foundPrompt = false
+                
                 for _, v in pairs(workspace:GetDescendants()) do
                     if v:IsA("ProximityPrompt") and v.ActionText == "Harvest" then
-                        v.Style = Enum.ProximityPromptStyle.Custom
                         if (v.Parent.Position - root.Position).Magnitude <= _G.Config.ScanRange then
                             v.HoldDuration = 0
-                            fireproximityprompt(v)
+                            fireproximityprompt(v) -- Lệnh gọi trực tiếp (Mobile/PC)
+                            foundPrompt = true
                         end
                     end
+                end
+                
+                -- Nếu đang đứng gần cây, spam thêm phím E thực tế để chống lỗi trên PC
+                if foundPrompt then
+                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                    task.wait(0.05)
+                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
                 end
             end
         end

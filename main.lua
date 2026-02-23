@@ -1,4 +1,4 @@
--- [[ HYRISER HUB BETA - V17 (FIX AUTO SHOP NO TELE) ]] --
+-- [[ HYRISER HUB BETA - V19 (STEALTH AUTO BUY) ]] --
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
@@ -8,9 +8,9 @@ local LP = Players.LocalPlayer
 _G.Config = { 
     AutoHarvest = false,
     AutoSell = false,
-    AutoShopOnRestock = true,
-    ScanRange = 100,
-    LastGardenPos = nil 
+    AutoBuySeeds = false, 
+    AutoBuyGears = false,
+    ScanRange = 100
 }
 
 -- [[ 1. WALK SPEED 36 ]] --
@@ -22,19 +22,14 @@ end)
 
 -- [[ 2. UI INITIALIZATION ]] --
 local ScreenGui = Instance.new("ScreenGui", CoreGui)
-ScreenGui.Name = "Hyriser_V17_Final"
+ScreenGui.Name = "Hyriser_V19_Stealth"
 
 local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.Size, MainFrame.Position = UDim2.new(0, 220, 0, 270), UDim2.new(0.12, 0, 0.15, 0)
+MainFrame.Size, MainFrame.Position = UDim2.new(0, 220, 0, 310), UDim2.new(0.12, 0, 0.15, 0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 MainFrame.Active, MainFrame.Draggable = true, true
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 6)
 Instance.new("UIStroke", MainFrame).Color = Color3.fromRGB(255, 200, 0)
-
-local Title = Instance.new("TextLabel", MainFrame)
-Title.Size, Title.Text = UDim2.new(1, 0, 0, 35), "HYRISER HUB BETA"
-Title.TextColor3, Title.BackgroundTransparency = Color3.fromRGB(255, 200, 0), 1
-Title.Font, Title.TextSize = Enum.Font.SourceSansBold, 17
 
 -- LOGO HH
 local ToggleIcon = Instance.new("TextButton", ScreenGui)
@@ -60,34 +55,53 @@ end
 
 CreateToggle("AUTO SPAM HARVEST", "AutoHarvest", UDim2.new(0, 15, 0, 45))
 CreateToggle("AUTO SELL (FULL)", "AutoSell", UDim2.new(0, 15, 0, 95))
-CreateToggle("AUTO SHOP (RESTOCK)", "AutoShopOnRestock", UDim2.new(0, 15, 0, 145))
+CreateToggle("STEALTH BUY SEEDS", "AutoBuySeeds", UDim2.new(0, 15, 0, 145))
+CreateToggle("STEALTH BUY GEARS", "AutoBuyGears", UDim2.new(0, 15, 0, 195))
 
--- [[ 3. HÀM MỞ SHOP (DÙNG REMOTE/PROXIMITY TỪ XA) ]] --
-local function ForceOpenSeedShop()
-    local bill = workspace:FindFirstChild("Bill", true)
-    if bill then
-        local p = bill:FindFirstChildWhichIsA("ProximityPrompt", true)
-        if p then
-            -- Thử kích hoạt từ xa bằng cách bỏ qua kiểm tra khoảng cách của game
-            local oldMax = p.MaxActivationDistance
-            p.MaxActivationDistance = 9999
-            fireproximityprompt(p)
-            task.wait(0.2)
-            p.MaxActivationDistance = oldMax
-        end
+-- [[ 3. LOGIC MUA NGẦM (KHÔNG CẦN UI) ]] --
+-- Danh sách các hạt giống và dụng cụ dựa trên video của bạn
+local SeedList = {"Carrot Seed", "Corn Seed", "Onion Seed", "Strawberry Seed", "Mushroom Seed", "Beetroot Seed", "Tomato Seed", "Apple Seed", "Rose Seed", "Wheat Seed", "Banana Seed", "Plum Seed", "Potato Seed", "Cabbage Seed", "Cherry Seed"}
+local GearList = {"Watering Can", "Basic Sprinkler", "Harvest Bell", "Turbo Sprinkler", "Favorite Tool", "Super Sprinkler"}
+
+local function StealthBuy(itemName)
+    -- Tìm RemoteEvent mua đồ của game (thường nằm trong ReplicatedStorage)
+    local buyEvent = game:GetService("ReplicatedStorage"):FindFirstChild("BuyItem", true) or 
+                     game:GetService("ReplicatedStorage"):FindFirstChild("PurchaseItem", true)
+    
+    if buyEvent and buyEvent:IsA("RemoteEvent") then
+        buyEvent:FireServer(itemName)
     end
 end
 
--- Vòng lặp quét thông báo liên tục thay vì đợi Event
 task.spawn(function()
-    local lastNotif = ""
+    while task.wait(1) do
+        if _G.Config.AutoBuySeeds then
+            for _, seed in pairs(SeedList) do
+                StealthBuy(seed)
+            end
+        end
+        
+        if _G.Config.AutoBuyGears then
+            for _, gear in pairs(GearList) do
+                StealthBuy(gear)
+            end
+        end
+    end
+end)
+
+-- [[ 4. LOGIC GỐC V15 (FARM & SELL) ]] --
+task.spawn(function()
     while task.wait(0.5) do
-        if _G.Config.AutoShopOnRestock then
-            for _, v in pairs(LP.PlayerGui:GetDescendants()) do
-                if v:IsA("TextLabel") and v.Visible and v.Text:lower():find("seed shop") and v.Text:lower():find("restocked") then
-                    if v.Text ~= lastNotif then -- Chỉ kích hoạt 1 lần cho mỗi thông báo mới
-                        lastNotif = v.Text
-                        ForceOpenSeedShop()
+        if _G.Config.AutoHarvest then
+            local root = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+            if not root then continue end
+            
+            -- Scan & Harvest
+            for _, v in pairs(workspace:GetDescendants()) do
+                if v:IsA("ProximityPrompt") and v.ActionText == "Harvest" then
+                    if (v.Parent.Position - root.Position).Magnitude <= _G.Config.ScanRange then
+                        v.HoldDuration = 0
+                        fireproximityprompt(v)
                     end
                 end
             end
@@ -95,60 +109,25 @@ task.spawn(function()
     end
 end)
 
--- [[ 4. LOGIC GỐC V15 (GIỮ NGUYÊN 100%) ]] --
-local function GetItemCount()
-    local count = #LP.Backpack:GetChildren()
-    if LP.Character then
-        for _, v in pairs(LP.Character:GetChildren()) do if v:IsA("Tool") then count = count + 1 end end
-    end
-    return count
-end
-
-local function IsInventoryFullUI()
-    for _, v in pairs(LP.PlayerGui:GetDescendants()) do
-        if v:IsA("TextLabel") and v.Visible and (v.Text:lower():find("full") or v.Text:lower():find("make space")) then return true end
-    end
-    return false
-end
-
+-- Auto Sell (Giữ nguyên logic bay tới Steve khi túi đầy)
 task.spawn(function()
-    while task.wait(0.5) do
-        if _G.Config.AutoHarvest then
-            local root = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-            if not root then continue end
+    while task.wait(1) do
+        if _G.Config.AutoSell then
+            local isFull = false
+            for _, v in pairs(LP.PlayerGui:GetDescendants()) do
+                if v:IsA("TextLabel") and v.Visible and v.Text:lower():find("full") then isFull = true break end
+            end
 
-            if _G.Config.AutoSell and IsInventoryFullUI() then
+            if isFull then
                 local steve = workspace:FindFirstChild("Steve", true)
-                if steve then
-                    _G.Config.LastGardenPos = root.CFrame
+                local root = LP.Character:FindFirstChild("HumanoidRootPart")
+                if steve and root then
+                    local oldPos = root.CFrame
                     root.CFrame = steve:GetModelCFrame() * CFrame.new(0, 0, 3)
-                    task.wait(1.2)
-                    local p = steve:FindFirstChildWhichIsA("ProximityPrompt", true)
-                    if p then
-                        fireproximityprompt(p)
-                        task.wait(1.5)
-                        for _, gui in pairs(LP.PlayerGui:GetDescendants()) do
-                            if gui:IsA("TextLabel") and gui.Text:lower():find("sell everything") then
-                                local b = gui:FindFirstAncestorWhichIsA("TextButton") or gui.Parent:FindFirstChildOfClass("TextButton")
-                                if b then for _, con in pairs(getconnections(b.MouseButton1Click)) do con:Fire() end end
-                            end
-                        end
-                        local waitT = 0
-                        while GetItemCount() > 0 and waitT < 20 do task.wait(0.5) waitT = waitT + 1 end
-                        task.wait(2)
-                        if _G.Config.LastGardenPos then root.CFrame = _G.Config.LastGardenPos end
-                    end
-                end
-            else
-                _G.Config.LastGardenPos = root.CFrame
-                for _, v in pairs(workspace:GetDescendants()) do
-                    if v:IsA("ProximityPrompt") and v.ActionText == "Harvest" then
-                        v.Style = Enum.ProximityPromptStyle.Custom
-                        if (v.Parent.Position - root.Position).Magnitude <= _G.Config.ScanRange then
-                            v.HoldDuration = 0
-                            fireproximityprompt(v)
-                        end
-                    end
+                    task.wait(1)
+                    fireproximityprompt(steve:FindFirstChildWhichIsA("ProximityPrompt", true))
+                    task.wait(1)
+                    root.CFrame = oldPos
                 end
             end
         end

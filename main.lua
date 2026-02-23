@@ -1,4 +1,4 @@
--- [[ HYRISER HUB BETA - V15 ]] --
+-- [[ HYRISER HUB BETA - V16 (V15 BASE + AUTO SHOP) ]] --
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
@@ -8,6 +8,7 @@ local LP = Players.LocalPlayer
 _G.Config = { 
     AutoHarvest = false,
     AutoSell = false,
+    AutoShopOnRestock = true, -- Tính năng mới: Tự mở shop khi có hàng
     ScanRange = 100,
     LastGardenPos = nil 
 }
@@ -21,14 +22,12 @@ end)
 
 -- [[ 2. UI INITIALIZATION ]] --
 local ScreenGui = Instance.new("ScreenGui", CoreGui)
-ScreenGui.Name = "Hyriser_V15_Final"
+ScreenGui.Name = "Hyriser_V16_Final"
 
--- MAIN FRAME
 local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.Size, MainFrame.Position = UDim2.new(0, 220, 0, 220), UDim2.new(0.12, 0, 0.15, 0)
+MainFrame.Size, MainFrame.Position = UDim2.new(0, 220, 0, 270), UDim2.new(0.12, 0, 0.15, 0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 MainFrame.Active, MainFrame.Draggable = true, true
-MainFrame.Visible = true -- Mặc định hiện
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 6)
 Instance.new("UIStroke", MainFrame).Color = Color3.fromRGB(255, 200, 0)
 
@@ -37,18 +36,14 @@ Title.Size, Title.Text = UDim2.new(1, 0, 0, 35), "HYRISER HUB BETA"
 Title.TextColor3, Title.BackgroundTransparency = Color3.fromRGB(255, 200, 0), 1
 Title.Font, Title.TextSize = Enum.Font.SourceSansBold, 17
 
--- LOGO HH QUAY TRỞ LẠI
+-- LOGO HH
 local ToggleIcon = Instance.new("TextButton", ScreenGui)
 ToggleIcon.Size, ToggleIcon.Position, ToggleIcon.Text = UDim2.new(0, 45, 0, 45), UDim2.new(0.05, 0, 0.15, 0), "HH"
 ToggleIcon.BackgroundColor3, ToggleIcon.TextColor3 = Color3.fromRGB(15, 15, 15), Color3.fromRGB(255, 200, 0)
 ToggleIcon.Font, ToggleIcon.TextSize = Enum.Font.LuckiestGuy, 22
 Instance.new("UICorner", ToggleIcon).CornerRadius = UDim.new(1, 0)
-local StrokeIcon = Instance.new("UIStroke", ToggleIcon)
-StrokeIcon.Color, StrokeIcon.Thickness = Color3.fromRGB(255, 200, 0), 2
-
-ToggleIcon.MouseButton1Click:Connect(function()
-    MainFrame.Visible = not MainFrame.Visible
-end)
+Instance.new("UIStroke", ToggleIcon).Color = Color3.fromRGB(255, 200, 0)
+ToggleIcon.MouseButton1Click:Connect(function() MainFrame.Visible = not MainFrame.Visible end)
 
 local function CreateToggle(label, key, pos)
     local b = Instance.new("TextButton", MainFrame)
@@ -65,57 +60,49 @@ end
 
 CreateToggle("AUTO SPAM HARVEST", "AutoHarvest", UDim2.new(0, 15, 0, 45))
 CreateToggle("AUTO SELL (FULL)", "AutoSell", UDim2.new(0, 15, 0, 95))
+CreateToggle("AUTO OPEN SHOP (RESTOCK)", "AutoShopOnRestock", UDim2.new(0, 15, 0, 145))
 
-local SeedBtn = Instance.new("TextButton", MainFrame)
-SeedBtn.Size, SeedBtn.Position = UDim2.new(0, 190, 0, 40), UDim2.new(0, 15, 0, 145)
-SeedBtn.BackgroundColor3, SeedBtn.TextColor3 = Color3.fromRGB(255, 200, 0), Color3.new(0,0,0)
-SeedBtn.Text, SeedBtn.Font, SeedBtn.TextSize = "OPEN SEED SHOP (REMOTE)", Enum.Font.SourceSansBold, 14
-Instance.new("UICorner", SeedBtn).CornerRadius = UDim.new(0, 6)
-
-SeedBtn.MouseButton1Click:Connect(function()
+-- HÀM MỞ SHOP NHƯ VIDEO
+local function OpenShopUI()
     local root = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
     local bill = workspace:FindFirstChild("Bill", true)
     if root and bill then
-        local oldPos = root.CFrame
-        root.CFrame = bill:GetModelCFrame()
-        task.wait(0.3)
-        fireproximityprompt(bill:FindFirstChildWhichIsA("ProximityPrompt", true))
-        task.wait(0.3)
-        root.CFrame = oldPos
+        local p = bill:FindFirstChildWhichIsA("ProximityPrompt", true)
+        if p then
+            local oldPos = root.CFrame
+            root.CFrame = bill:GetModelCFrame() -- Bay tới Bill
+            task.wait(0.5)
+            fireproximityprompt(p) -- Bấm tương tác để hiện UI như video
+            task.wait(0.8)
+            root.CFrame = oldPos -- Bay về vườn ngay lập tức
+        end
+    end
+end
+
+-- [[ 3. LOGIC THEO DÕI THÔNG BÁO (IMAGE & VIDEO) ]] --
+LP.PlayerGui.DescendantAdded:Connect(function(v)
+    if _G.Config.AutoShopOnRestock and v:IsA("TextLabel") then
+        task.wait(0.1)
+        if v.Text:lower():find("seed shop") and v.Text:lower():find("restocked") then
+            OpenShopUI() -- Kích hoạt khi hiện thông báo như ảnh bạn gửi
+        end
     end
 end)
 
--- [[ 3. LOGIC SMART SELL ]] --
-
-local function IsInventoryFullUI()
-    for _, v in pairs(LP.PlayerGui:GetDescendants()) do
-        if v:IsA("TextLabel") and v.Visible and (v.Text:lower():find("full") or v.Text:lower():find("make space")) then 
-            return true 
-        end
-    end
-    return false
-end
-
+-- [[ 4. LOGIC GỐC V15 ]] --
 local function GetItemCount()
     local count = #LP.Backpack:GetChildren()
     if LP.Character then
-        for _, v in pairs(LP.Character:GetChildren()) do
-            if v:IsA("Tool") then count = count + 1 end
-        end
+        for _, v in pairs(LP.Character:GetChildren()) do if v:IsA("Tool") then count = count + 1 end end
     end
     return count
 end
 
-local function ForceSellAction()
+local function IsInventoryFullUI()
     for _, v in pairs(LP.PlayerGui:GetDescendants()) do
-        if v:IsA("TextLabel") and v.Text:lower():find("sell everything") then
-            local button = v:FindFirstAncestorWhichIsA("TextButton") or v.Parent:FindFirstChildOfClass("TextButton") or v.Parent
-            if button and button:IsA("TextButton") then
-                for _, connection in pairs(getconnections(button.MouseButton1Click)) do connection:Fire() end
-                for _, connection in pairs(getconnections(button.Activated)) do connection:Fire() end
-            end
-        end
+        if v:IsA("TextLabel") and v.Visible and (v.Text:lower():find("full") or v.Text:lower():find("make space")) then return true end
     end
+    return false
 end
 
 task.spawn(function()
@@ -124,38 +111,31 @@ task.spawn(function()
             local root = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
             if not root then continue end
 
-            -- Nếu thông báo FULL xuất hiện -> Bay đi bán
             if _G.Config.AutoSell and IsInventoryFullUI() then
                 local steve = workspace:FindFirstChild("Steve", true)
                 if steve then
-                    if not _G.Config.LastGardenPos then _G.Config.LastGardenPos = root.CFrame end
-                    
+                    _G.Config.LastGardenPos = root.CFrame
                     root.CFrame = steve:GetModelCFrame() * CFrame.new(0, 0, 3)
                     task.wait(1.2)
-                    
                     local p = steve:FindFirstChildWhichIsA("ProximityPrompt", true)
                     if p then
                         fireproximityprompt(p)
                         task.wait(1.5)
-                        ForceSellAction()
-                        
-                        -- ĐỢI CHO ĐẾN KHI TÚI TRỐNG (KHÔNG DỰA VÀO THÔNG BÁO)
-                        local waitTime = 0
-                        while GetItemCount() > 0 and waitTime < 20 do
-                            task.wait(0.5)
-                            waitTime = waitTime + 1
-                            if waitTime % 4 == 0 then ForceSellAction() end
+                        -- Force Sell Everything
+                        for _, gui in pairs(LP.PlayerGui:GetDescendants()) do
+                            if gui:IsA("TextLabel") and gui.Text:lower():find("sell everything") then
+                                local b = gui:FindFirstAncestorWhichIsA("TextButton") or gui.Parent:FindFirstChildOfClass("TextButton")
+                                if b then for _, con in pairs(getconnections(b.MouseButton1Click)) do con:Fire() end end
+                            end
                         end
-                        
-                        task.wait(2) -- Đợi tiền cộng
+                        local waitT = 0
+                        while GetItemCount() > 0 and waitT < 20 do task.wait(0.5) waitT = waitT + 1 end
+                        task.wait(2)
                         if _G.Config.LastGardenPos then root.CFrame = _G.Config.LastGardenPos end
                     end
                 end
             else
-                -- Lưu vị trí khi đang nhặt cây
                 _G.Config.LastGardenPos = root.CFrame
-                
-                -- Spam nhặt
                 for _, v in pairs(workspace:GetDescendants()) do
                     if v:IsA("ProximityPrompt") and v.ActionText == "Harvest" then
                         v.Style = Enum.ProximityPromptStyle.Custom

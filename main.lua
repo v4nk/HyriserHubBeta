@@ -1,4 +1,4 @@
--- [[ HYRISER HUB BETA - V16 (V15 BASE + AUTO SHOP) ]] --
+-- [[ HYRISER HUB BETA - V17 (FIX AUTO SHOP NO TELE) ]] --
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
@@ -8,7 +8,7 @@ local LP = Players.LocalPlayer
 _G.Config = { 
     AutoHarvest = false,
     AutoSell = false,
-    AutoShopOnRestock = true, -- Tính năng mới: Tự mở shop khi có hàng
+    AutoShopOnRestock = true,
     ScanRange = 100,
     LastGardenPos = nil 
 }
@@ -22,7 +22,7 @@ end)
 
 -- [[ 2. UI INITIALIZATION ]] --
 local ScreenGui = Instance.new("ScreenGui", CoreGui)
-ScreenGui.Name = "Hyriser_V16_Final"
+ScreenGui.Name = "Hyriser_V17_Final"
 
 local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.Size, MainFrame.Position = UDim2.new(0, 220, 0, 270), UDim2.new(0.12, 0, 0.15, 0)
@@ -60,36 +60,42 @@ end
 
 CreateToggle("AUTO SPAM HARVEST", "AutoHarvest", UDim2.new(0, 15, 0, 45))
 CreateToggle("AUTO SELL (FULL)", "AutoSell", UDim2.new(0, 15, 0, 95))
-CreateToggle("AUTO OPEN SHOP (RESTOCK)", "AutoShopOnRestock", UDim2.new(0, 15, 0, 145))
+CreateToggle("AUTO SHOP (RESTOCK)", "AutoShopOnRestock", UDim2.new(0, 15, 0, 145))
 
--- HÀM MỞ SHOP NHƯ VIDEO
-local function OpenShopUI()
-    local root = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+-- [[ 3. HÀM MỞ SHOP (DÙNG REMOTE/PROXIMITY TỪ XA) ]] --
+local function ForceOpenSeedShop()
     local bill = workspace:FindFirstChild("Bill", true)
-    if root and bill then
+    if bill then
         local p = bill:FindFirstChildWhichIsA("ProximityPrompt", true)
         if p then
-            local oldPos = root.CFrame
-            root.CFrame = bill:GetModelCFrame() -- Bay tới Bill
-            task.wait(0.5)
-            fireproximityprompt(p) -- Bấm tương tác để hiện UI như video
-            task.wait(0.8)
-            root.CFrame = oldPos -- Bay về vườn ngay lập tức
+            -- Thử kích hoạt từ xa bằng cách bỏ qua kiểm tra khoảng cách của game
+            local oldMax = p.MaxActivationDistance
+            p.MaxActivationDistance = 9999
+            fireproximityprompt(p)
+            task.wait(0.2)
+            p.MaxActivationDistance = oldMax
         end
     end
 end
 
--- [[ 3. LOGIC THEO DÕI THÔNG BÁO (IMAGE & VIDEO) ]] --
-LP.PlayerGui.DescendantAdded:Connect(function(v)
-    if _G.Config.AutoShopOnRestock and v:IsA("TextLabel") then
-        task.wait(0.1)
-        if v.Text:lower():find("seed shop") and v.Text:lower():find("restocked") then
-            OpenShopUI() -- Kích hoạt khi hiện thông báo như ảnh bạn gửi
+-- Vòng lặp quét thông báo liên tục thay vì đợi Event
+task.spawn(function()
+    local lastNotif = ""
+    while task.wait(0.5) do
+        if _G.Config.AutoShopOnRestock then
+            for _, v in pairs(LP.PlayerGui:GetDescendants()) do
+                if v:IsA("TextLabel") and v.Visible and v.Text:lower():find("seed shop") and v.Text:lower():find("restocked") then
+                    if v.Text ~= lastNotif then -- Chỉ kích hoạt 1 lần cho mỗi thông báo mới
+                        lastNotif = v.Text
+                        ForceOpenSeedShop()
+                    end
+                end
+            end
         end
     end
 end)
 
--- [[ 4. LOGIC GỐC V15 ]] --
+-- [[ 4. LOGIC GỐC V15 (GIỮ NGUYÊN 100%) ]] --
 local function GetItemCount()
     local count = #LP.Backpack:GetChildren()
     if LP.Character then
@@ -121,7 +127,6 @@ task.spawn(function()
                     if p then
                         fireproximityprompt(p)
                         task.wait(1.5)
-                        -- Force Sell Everything
                         for _, gui in pairs(LP.PlayerGui:GetDescendants()) do
                             if gui:IsA("TextLabel") and gui.Text:lower():find("sell everything") then
                                 local b = gui:FindFirstAncestorWhichIsA("TextButton") or gui.Parent:FindFirstChildOfClass("TextButton")
